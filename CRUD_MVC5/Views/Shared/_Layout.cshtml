@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>@ViewBag.Title</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    @RenderSection("styles", required: false)
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar text-light bg-dark">
+            <a class="navbar-brand text-light" href="@Url.Action("Index", "Home")"><i class="fas fa-stream"></i> 代辦清單總覽</a>
+        </nav>
+        @RenderBody()
+
+        <nav class="navbar text-light" style="position: sticky; bottom: 0; background-color:#aaa;">
+            <span>鄭仰婷 - 2019/12/23</span>
+        </nav>
+    </div>
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("scripts", required: false)
+</body>
+</html>

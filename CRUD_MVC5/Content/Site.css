@@ -1,0 +1,42 @@
+﻿body, html {
+    background-color: #eee;
+    letter-spacing: 1px;
+}
+button {
+    border-radius: 0 !important;
+}
+
+input[type="text"] {
+    transition: 0.3s;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid black !important;
+}
+
+    input[type="text"]:hover {
+        transition: 0.3s;
+        border-bottom: 2px solid #fff87a !important;
+    }
+    input[type="text"]:focus, input[type="text"]:active {
+        outline: none !important;
+        box-shadow: none;
+        border-bottom: 3px solid #ffd800 !important;
+    }
+.modal-body{
+    padding: 2vw;
+}
+.modal-header {
+    border: 0 !important;
+    border-left: 10px solid #fff87a !important;
+    background-color: #eee;
+}
+.modal-footer {
+    border: 0 !important;
+}
+.modal-content {
+    border-radius: 0 !important;
+}
+td {
+    max-width: 100px !important;
+    word-wrap: break-word;
+}

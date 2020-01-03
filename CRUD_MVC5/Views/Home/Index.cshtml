@@ -1,0 +1,307 @@
+﻿@model CRUD_MVC5.MetaData.TodosMetadata
+@{
+    ViewBag.Title = "代辦事項";
+}
+@section styles
+{
+    <style>
+        .container-fluid {
+            background-color: white;
+            padding: 30px;
+            box-shadow: 0px 0px 10px #aaa;
+        }
+    </style>
+}
+<div class="container-fluid">
+    <div class="row">
+        <button type="button" class="btn btn-warning text-white mb-3 addModalbtn" data-toggle="modal" data-target="#addModal">
+            <i class="fas fa-plus"></i> 新增
+        </button>
+    </div>
+    <div class="row">
+        <!-- Table -->
+        <table class="table table-bordered table-striped" id="loading">
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">完成</th>
+                    <th scope="col">代辦事項(50字)</th>
+                    <th scope="col">建立時間</th>
+                    <th scope="col">動作</th>
+                </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+        </table>
+    </div>
+</div>
+<!-- 新增 Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModalLabel">新增代辦事項</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="post">
+                    <div class="form-group">
+                        <label for="addTodoOk"><i class="fas fa-check"></i> 是否完成</label>
+                        <input type="checkbox" class="form-control" id="addTodoOk">
+                    </div>
+                    <div class="form-group">
+                        <label for="addTodoEvent"><i class="fas fa-list-alt required"></i> 代辦事項<span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="addTodoEvent">
+                        @Html.ValidationMessageFor(m=>m.Event, "", new { @class = "text-danger EventRequired" })
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" id="confirmAdd" class="btn btn-warning text-white" data-dismiss="modal"><i class="fas fa-check"></i> 新增</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改 Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">修改</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="hidden" name="Id" id="editTodoID" value="" />
+                    <div class="form-group">
+                        <label for="TodoOk"><i class="fas fa-check"></i> 是否完成</label>
+                        <input type="checkbox" class="form-control" id="editTodoOk">
+                    </div>
+                    <div class="form-group">
+                        <label for="TodoEvent"><i class="fas fa-list-alt"></i> 代辦事項<span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editTodoEvent">
+                        @Html.ValidationMessageFor(m => m.Event, "", new { @class = "text-danger editEventRequired" })
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="updateConfirm" data-dismiss="modal">確定修改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts
+{
+    <script>
+        //顯示是否空值提示
+        function checkIfNull() {
+            if ($('#addTodoEvent').val().trim() == '') {
+                $('.EventRequired').text("請填寫代辦事項，不得空白");
+                $('#confirmAdd').prop('disabled', true);
+            }
+            else if ($('#addTodoEvent').val().length > 50) {
+                $('.EventRequired').text("字數不得超過 50 字");
+                $('#confirmAdd').prop('disabled', true);
+            }
+            else {
+                $('#confirmAdd').prop('disabled', false);
+                $('.EventRequired').text("");
+            }
+        }
+        checkIfNull();
+        $('#addTodoEvent').keyup(() => {
+            checkIfNull();
+        })
+        $('.addModalbtn').click(() => {
+            checkIfNull();
+        })
+
+        //editTodoEvent
+        function checkIfNulledit() {
+            if ($('#editTodoEvent').val().trim() == '') {
+                $('.editEventRequired').text("請填寫代辦事項，不得空白");
+                $('#updateConfirm').prop('disabled', true);
+            }
+            else if ($('#editTodoEvent').val().length > 50) {
+                $('.editEventRequired').text("字數不得超過 50 字");
+                $('#updateConfirm').prop('disabled', true);
+            }
+            else {
+                $('#updateConfirm').prop('disabled', false);
+                $('.editEventRequired').text("");
+            }
+        }
+        checkIfNull();
+        $('#editTodoEvent').keyup(() => {
+            checkIfNulledit();
+        })
+
+        //get
+        function updateTable() {
+            $.getJSON(
+                '@Url.RouteUrl("DefaultApi", new { httproute="", controller="values"})', function (data) {
+                    var frag = $(document.createDocumentFragment());
+                    var str = ``;
+                    $.each(data, function (idx, todo)
+                    {
+                        str = `
+                        <tr>
+                            <td><input type="checkbox" name="Done" ${todo.Done?'checked':''}></td>
+                            <td>${todo.Event}</td>
+                            <td>${todo.TimeStamp == null ? '-' : todo.TimeStamp.split('T').join(' ').toString() }</td>
+                            <td>
+                                <button type="button" class="btn btn-secondary editTodo" data-id="${todo.Id}" data-toggle="modal" data-target="#editModal">
+                                  <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger deleteTodo" data-id="${todo.Id}">
+                                  <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                        frag.append(str);
+                    })
+                    $("#tb").html(frag);
+                }
+            );
+        }
+        $(document).ready(function () { updateTable();})
+
+        //post
+        $("#confirmAdd").click(() => {
+            var jsonData = JSON.stringify({ Done: $("#addTodoOk").prop('checked'), Event: $("#addTodoEvent").val() });
+            console.log($("#addTodoOk").val())
+            console.log(jsonData)
+            $.ajax({
+            url: '@Url.RouteUrl("DefaultApi", new { httproute="", controller= "values" })',
+            type: 'POST',
+            contentType: "application/json",
+            data: jsonData
+            }).done(function (result) {
+                    if (result > 0) {
+                        updateTable();
+                        $(".container").prepend(`<div id="addSucceedAlart" class="col-2 position-absolute alert alert-success alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                          <strong>新增成功!</strong> 已更新到資料庫。
+                                          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                          </button>
+                                        </div>`);
+                        $("#addSucceedAlart").fadeTo(2000, 500).slideUp(500, function () {
+                            $(this).alert('close');
+                        });
+                    }
+                    else {
+                        $(".container").prepend(`<div id="addFailAlart" class="col-2 position-absolute alert alert-danger alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                  <strong>新增失敗:(</strong> 對不起，新增失敗，請再新增一次。
+                                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                  </button>
+                                </div>`);
+                        $("#addFailAlart").fadeTo(2000, 500).slideUp(500, function () {
+                            $(this).alert('close');
+                        });
+                    }
+                }).fail(function (error) {
+                    console.log(error)
+                $(".container").prepend(`<div id="addFailAlart" class="col-2 position-absolute alert alert-danger alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                  <strong>新增失敗:(</strong> 對不起，新增失敗，請再新增一次。
+                                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                  </button>
+                                </div>`);
+                $("#addFailAlart").fadeTo(2000, 500).slideUp(500, function () {
+                    $(this).alert('close');
+                });
+                });
+            //清空
+            $("#addTodoOk").prop('checked', false);
+            $("#addTodoEvent").val('');
+        })
+
+        //delete
+        //把事件綁到 ajax 的內容上
+        $("#tb").on('click', '.deleteTodo', (e) => {
+            var deleteid = $(e.currentTarget).data("id");
+            $.ajax({
+                url: '@Url.RouteUrl("DefaultApi", new { httproute="", controller= "values" })?id=' + deleteid,
+                method: 'DELETE'
+            }).done(function () {
+                updateTable();
+                $(".container").prepend(`<div id="addSucceedAlart" class="col-2 position-absolute alert alert-success alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                        <strong>刪除成功!</strong> 已更新到資料庫。
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>`);
+                $("#addSucceedAlart").fadeTo(2000, 500).slideUp(500, function () {
+                    $(this).alert('close');
+                });
+            }).fail(function () {
+                $(".container").prepend(`<div id="addFailAlart" class="col-2 position-absolute alert alert-danger alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                        <strong>刪除失敗:(</strong> 對不起，新增失敗，請再新增一次。
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>`);
+                $("#addFailAlart").fadeTo(2000, 500).slideUp(500, function () {
+                    $(this).alert('close');
+                });
+            });
+        });
+
+        //put
+        $("#tb").on('click', '.editTodo', function (e) {
+            console.log("修改");
+            let id = $(e.currentTarget).data('id');
+            $.ajax({
+                url: '@Url.RouteUrl("DefaultApi", new { httproute = "", controller = "values" })/' + id,
+                method: 'Get'
+            }).done(function (data) {
+                console.log(data)
+                let Todo = JSON.parse(data);
+                $('#editTodoID').val(Todo.Id);
+                $('#editTodoOk').prop('checked', Todo.Done?true:false);
+                $('#editTodoEvent').val(Todo.Event);
+            })
+
+        })
+        $('#updateConfirm').click(function () {
+            let id = $('#editTodoID').val();
+            let TodoOk = $('#editTodoOk').prop('checked');
+            let TodoEvent = $('#editTodoEvent').val();
+            //不要 stringify ，會把 int 變成 string 後端會 500
+            $.ajax({
+                url: '@Url.RouteUrl("DefaultApi", new { httproute = "", controller = "values" })/ ' + id,
+                method: 'PUT',
+                type: 'application/json',
+                data: { "Done": TodoOk, "Event": TodoEvent }
+            }).done(function () {
+                updateTable();
+                $(".container").prepend(`<div id="addSucceedAlart" class="col-2 position-absolute alert alert-success alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                        <strong>修改成功!</strong> 已更新到資料庫。
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>`);
+                $("#addSucceedAlart").fadeTo(2000, 500).slideUp(500, function () {
+                    $(this).alert('close');
+                });
+            }).fail(function () {
+                $(".container").prepend(`<div id="addFailAlart" class="col-2 position-absolute alert alert-danger alert-dismissible fade show" role="alert" style="width:50vw; right:0;z-index: 2000;">
+                                    <strong>修改失敗:(</strong> 對不起，修改失敗，請再試一次。
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>`);
+                $("#addFailAlart").fadeTo(2000, 500).slideUp(500, function () {
+                    $(this).alert('close');
+                });
+                })
+        })
+    </script>
+}
